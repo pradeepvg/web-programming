@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Smart Home Expense & Maintenance Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Sidebar Component -->
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <!-- Main Workspace -->
+    <div class="main-content">
+      <!-- Top Navigation Header -->
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+
+        <!-- Welcome Banner & Quick Action Buttons -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 id="welcomeGreeting" style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+              Welcome, Homeowner 👋
+            </h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">
+              Household overview for <span id="currentPeriodLabel" style="font-weight: 600; color: var(--teal-light);">Current Month</span>
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary" onclick="openQuickExpenseModal()">
+              <span>+ Add Expense</span>
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='maintenance.html?action=new'">
+              <span>🔧 Log Maintenance</span>
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='bills.html'">
+              <span>🧾 Pay Bill</span>
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='budgets.html'">
+              <span>🎯 Set Budget</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Summary Metric Cards -->
+        <div class="stats-grid">
+          <!-- 1. Total Expenses This Month -->
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Month's Expenses</span>
+              <div class="stat-icon-wrapper icon-teal">💳</div>
+            </div>
+            <div class="stat-value" id="cardExpenses">₹0.00</div>
+            <div class="stat-meta">
+              <span>Dynamic sum of all recorded household expenses</span>
+            </div>
+          </div>
+
+          <!-- 2. Remaining Budget -->
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Remaining Budget</span>
+              <div class="stat-icon-wrapper icon-emerald">🎯</div>
+            </div>
+            <div class="stat-value" id="cardRemainingBudget">₹0.00</div>
+            <div class="stat-meta" id="cardBudgetMeta">
+              <span>Budget: ₹0.00 (0% used)</span>
+            </div>
+          </div>
+
+          <!-- 3. Pending Maintenance Tasks -->
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Pending Tasks</span>
+              <div class="stat-icon-wrapper icon-amber">⏳</div>
+            </div>
+            <div class="stat-value" id="cardPendingTasks">0</div>
+            <div class="stat-meta">
+              <span>Scheduled or in-progress service requests</span>
+            </div>
+          </div>
+
+          <!-- 4. Upcoming Bills -->
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Upcoming Bills</span>
+              <div class="stat-icon-wrapper icon-blue">🧾</div>
+            </div>
+            <div class="stat-value" id="cardUpcomingBills">0</div>
+            <div class="stat-meta">
+              <span>Unpaid utility & household dues</span>
+            </div>
+          </div>
+
+          <!-- 5. Overdue Maintenance Tasks -->
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Overdue Tasks</span>
+              <div class="stat-icon-wrapper icon-rose">⚠️</div>
+            </div>
+            <div class="stat-value" id="cardOverdueTasks" style="color: var(--danger);">0</div>
+            <div class="stat-meta">
+              <span>Requires immediate inspection or booking</span>
+            </div>
+          </div>
+
+          <!-- 6. Total Maintenance Expenses -->
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Total Repair Costs</span>
+              <div class="stat-icon-wrapper icon-purple">🛠️</div>
+            </div>
+            <div class="stat-value" id="cardTotalMaintenanceCost">₹0.00</div>
+            <div class="stat-meta">
+              <span>Cumulative actual maintenance outlay</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row 1: Monthly Expenses Bar & Category Doughnut -->
+        <div class="charts-grid">
+          <!-- Monthly Trend Bar Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Monthly Expense Trends (Last 6 Months)</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">INR (₹)</span>
+            </div>
+            <div class="card-body" style="height: 280px; position: relative;">
+              <canvas id="monthlyExpensesChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+
+          <!-- Category Doughnut Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Category Breakdown</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Current Month</span>
+            </div>
+            <div class="card-body" style="height: 280px; position: relative;">
+              <canvas id="categoryExpensesChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row 2: Budget vs Expense Progress & Maintenance Status Breakdown -->
+        <div class="charts-grid-equal">
+          <!-- Budget vs Spent Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Budget Utilization Health</h3>
+              <a href="budgets.html" style="font-size: 0.82rem; color: var(--teal-light); font-weight: 600;">Manage Budgets →</a>
+            </div>
+            <div class="card-body" id="budgetProgressContainer" style="display: flex; flex-direction: column; justify-content: center; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);" id="budgetSpentRatio">₹0 / ₹0</span>
+                <span style="font-size: 1.1rem; font-weight: 800; color: var(--teal-light);" id="budgetPercentText">0%</span>
+              </div>
+              <div style="width: 100%; height: 14px; background: var(--bg-surface); border-radius: 9999px; overflow: hidden;">
+                <div id="budgetProgressBar" style="height: 100%; width: 0%; background: var(--teal-light); border-radius: 9999px; transition: width 0.5s ease;"></div>
+              </div>
+              <div id="budgetAlertBanner" style="display: none; padding: 12px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;"></div>
+            </div>
+          </div>
+
+          <!-- Maintenance Tasks Status -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Maintenance Status Breakdown</h3>
+              <a href="maintenance.html" style="font-size: 0.82rem; color: var(--teal-light); font-weight: 600;">View All Tasks →</a>
+            </div>
+            <div class="card-body" style="height: 260px; position: relative;">
+              <canvas id="maintenanceStatusChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Activity Panels Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px;">
+          <!-- Recent Transactions -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Recent Transactions</h3>
+              <a href="expenses.html" style="font-size: 0.82rem; color: var(--teal-light); font-weight: 600;">All Expenses →</a>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div id="recentExpensesList" style="display: flex; flex-direction: column;">
+                <div style="padding: 24px; text-align: center; color: var(--text-muted);">Loading transactions...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upcoming Maintenance Schedules -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Upcoming Maintenance</h3>
+              <a href="calendar.html" style="font-size: 0.82rem; color: var(--teal-light); font-weight: 600;">View Calendar →</a>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div id="upcomingMaintenanceList" style="display: flex; flex-direction: column;">
+                <div style="padding: 24px; text-align: center; color: var(--text-muted);">Loading tasks...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Repair Activities -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Completed Repairs</h3>
+              <a href="maintenance.html" style="font-size: 0.82rem; color: var(--teal-light); font-weight: 600;">History →</a>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div id="recentRepairsList" style="display: flex; flex-direction: column;">
+                <div style="padding: 24px; text-align: center; color: var(--text-muted);">Loading repair log...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Add Expense Modal -->
+  <div id="quickExpenseModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Household Expense</h3>
+        <button class="modal-close" onclick="closeModal('quickExpenseModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveQuickExpense(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Expense Title *</label>
+            <input type="text" id="qeTitle" class="form-control" placeholder="e.g. BESCOM Electricity Bill" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="qeCategory" class="form-control" required>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water</option>
+                <option value="Gas">Gas</option>
+                <option value="Internet">Internet</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical repairs">Electrical repairs</option>
+                <option value="Painting">Painting</option>
+                <option value="Air conditioning">Air conditioning</option>
+                <option value="Water purifier">Water purifier</option>
+                <option value="Appliances">Appliances</option>
+                <option value="Property maintenance">Property maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Amount (₹ INR) *</label>
+              <input type="number" id="qeAmount" class="form-control" placeholder="1850" min="0.01" step="0.01" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date *</label>
+              <input type="date" id="qeDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Payment Method *</label>
+              <select id="qePaymentMethod" class="form-control" required>
+                <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Net Banking">Net Banking</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Vendor / Provider</label>
+            <input type="text" id="qeVendor" class="form-control" placeholder="e.g. BESCOM, Blinkit, QuickFix">
+          </div>
+          <div class="form-group">
+            <label>Description / Notes</label>
+            <textarea id="qeDescription" class="form-control" rows="2" placeholder="Optional expense details"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('quickExpenseModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/chart-runner.js"></script>
+  <script>
+    let currentSelectedMonth = new Date().toISOString().substring(0, 7);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('dashboard');
+      renderHeader('Household Dashboard');
+      document.getElementById('qeDate').value = new Date().toISOString().substring(0, 10);
+      loadDashboard();
+    });
+
+    window.openQuickAdd = openQuickExpenseModal;
+
+    function openQuickExpenseModal() {
+      document.getElementById('qeDate').value = new Date().toISOString().substring(0, 10);
+      openModal('quickExpenseModal');
+    }
+
+    window.onMonthChange = function(monthVal) {
+      currentSelectedMonth = monthVal;
+      document.getElementById('currentPeriodLabel').innerText = monthVal;
+      loadDashboard();
+    };
+
+    async function loadDashboard() {
+      try {
+        const user = API.getUser();
+        if (user && user.name) {
+          document.getElementById('welcomeGreeting').innerText = `Welcome, ${user.name.split(' ')[0]} 👋`;
+        }
+
+        const data = await API.getDashboardSummary(currentSelectedMonth);
+        const cards = data.summaryCards || {};
+
+        // Update 6 summary cards
+        document.getElementById('cardExpenses').innerText = formatINR(cards.totalExpensesThisMonth);
+        document.getElementById('cardRemainingBudget').innerText = formatINR(cards.remainingBudget);
+        document.getElementById('cardRemainingBudget').style.color = cards.remainingBudget < 0 ? 'var(--danger)' : 'var(--text-primary)';
+        document.getElementById('cardBudgetMeta').innerHTML = `<span>Budget: ${formatINR(cards.monthlyBudget)} (${cards.budgetUtilizationPercent}% used)</span>`;
+
+        document.getElementById('cardPendingTasks').innerText = cards.pendingMaintenanceCount || 0;
+        document.getElementById('cardUpcomingBills').innerText = cards.upcomingBillsCount || 0;
+        document.getElementById('cardOverdueTasks').innerText = cards.overdueMaintenanceCount || 0;
+        document.getElementById('cardTotalMaintenanceCost').innerText = formatINR(cards.totalMaintenanceExpenses);
+
+        // Render Charts
+        MiniChart.renderBar('monthlyExpensesChart', data.monthlyExpensesChart);
+        MiniChart.renderDoughnut('categoryExpensesChart', data.categoryExpensesChart);
+
+        const maintColors = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
+        MiniChart.renderDoughnut('maintenanceStatusChart', data.maintenanceStatusChart, maintColors);
+
+        // Budget Health
+        const spent = Number(cards.totalExpensesThisMonth || 0);
+        const budget = Number(cards.monthlyBudget || 0);
+        const pct = cards.budgetUtilizationPercent || 0;
+        document.getElementById('budgetSpentRatio').innerText = `${formatINR(spent)} spent of ${formatINR(budget)} limit`;
+        document.getElementById('budgetPercentText').innerText = `${pct}%`;
+        const bar = document.getElementById('budgetProgressBar');
+        bar.style.width = Math.min(pct, 100) + '%';
+
+        const alertBanner = document.getElementById('budgetAlertBanner');
+        if (pct >= 100) {
+          bar.style.background = 'var(--danger)';
+          alertBanner.style.display = 'block';
+          alertBanner.style.background = 'var(--danger-bg)';
+          alertBanner.style.color = 'var(--danger)';
+          alertBanner.innerHTML = `⚠️ <strong>Budget Exceeded!</strong> You have overspent by ${formatINR(Math.abs(cards.remainingBudget))}.`;
+        } else if (pct >= 80) {
+          bar.style.background = 'var(--warning)';
+          alertBanner.style.display = 'block';
+          alertBanner.style.background = 'var(--warning-bg)';
+          alertBanner.style.color = '#d97706';
+          alertBanner.innerHTML = `⚡ <strong>Warning:</strong> You have reached ${pct}% of your monthly allocation.`;
+        } else {
+          bar.style.background = 'var(--teal-light)';
+          alertBanner.style.display = 'none';
+        }
+
+        // Recent Expenses List
+        const expListEl = document.getElementById('recentExpensesList');
+        if (!data.recentExpenses || data.recentExpenses.length === 0) {
+          expListEl.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-muted);">No expenses recorded this period.</div>';
+        } else {
+          expListEl.innerHTML = data.recentExpenses.map(e => `
+            <div style="padding:14px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.92rem; color:var(--text-primary);">${e.title}</div>
+                <div style="font-size:0.78rem; color:var(--text-muted);">${formatDate(e.expense_date || e.expenseDate)} • ${e.category} • ${e.payment_method || e.paymentMethod}</div>
+              </div>
+              <div style="font-weight:700; color:var(--text-primary); font-size:0.98rem;">${formatINR(e.amount)}</div>
+            </div>
+          `).join('');
+        }
+
+        // Upcoming Maintenance List
+        const maintListEl = document.getElementById('upcomingMaintenanceList');
+        if (!data.upcomingMaintenance || data.upcomingMaintenance.length === 0) {
+          maintListEl.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-muted);">No pending maintenance scheduled!</div>';
+        } else {
+          maintListEl.innerHTML = data.upcomingMaintenance.map(m => `
+            <div style="padding:14px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.92rem; color:var(--text-primary);">${m.title}</div>
+                <div style="font-size:0.78rem; color:var(--text-muted);">Due: ${formatDate(m.due_date || m.dueDate)} • ${m.category}</div>
+              </div>
+              <span class="badge badge-${(m.priority || 'MEDIUM').toLowerCase()}">${m.priority || 'MEDIUM'}</span>
+            </div>
+          `).join('');
+        }
+
+        // Recent Repairs List
+        const repListEl = document.getElementById('recentRepairsList');
+        if (!data.recentRepairs || data.recentRepairs.length === 0) {
+          repListEl.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-muted);">No recent repair activities recorded.</div>';
+        } else {
+          repListEl.innerHTML = data.recentRepairs.map(r => `
+            <div style="padding:14px 20px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.92rem; color:var(--text-primary);">${r.title}</div>
+                <div style="font-size:0.78rem; color:var(--text-muted);">${formatDate(r.completion_date || r.completionDate)} • ${r.service_provider_name || 'Technician'}</div>
+              </div>
+              <div style="font-weight:700; color:var(--success); font-size:0.95rem;">${formatINR(r.actual_cost || r.actualCost || 0)}</div>
+            </div>
+          `).join('');
+        }
+
+      } catch (err) {
+        showToast('Failed to load dashboard data: ' + err.message, 'error');
+      }
+    }
+
+    async function handleSaveQuickExpense(e) {
+      e.preventDefault();
+      const title = document.getElementById('qeTitle').value.trim();
+      const category = document.getElementById('qeCategory').value;
+      const amount = parseFloat(document.getElementById('qeAmount').value);
+      const expenseDate = document.getElementById('qeDate').value;
+      const paymentMethod = document.getElementById('qePaymentMethod').value;
+      const vendor = document.getElementById('qeVendor').value.trim();
+      const description = document.getElementById('qeDescription').value.trim();
+
+      if (!title || !category || isNaN(amount) || amount <= 0) {
+        showToast('Please provide title, category, and positive amount', 'error');
+        return;
+      }
+
+      try {
+        await API.createExpense({
+          title, category, amount, expenseDate, paymentMethod, vendor, description
+        });
+        showToast('Expense recorded successfully in ₹ INR!', 'success');
+        closeModal('quickExpenseModal');
+        document.getElementById('qeTitle').value = '';
+        document.getElementById('qeAmount').value = '';
+        document.getElementById('qeVendor').value = '';
+        document.getElementById('qeDescription').value = '';
+        loadDashboard();
+      } catch (err) {
+        showToast('Failed to save expense: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

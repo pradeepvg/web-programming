@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monthly Budget Management - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <!-- Title & Action -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Household Budget Planner</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">Set monthly spending caps, monitor category allocations and receive overspend warnings in ₹ INR</p>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="openBudgetConfigModal()">
+              <span>🎯 Configure Budget</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Budget Status Banner (Dynamic 80% warning / 100% breach) -->
+        <div id="budgetBanner" style="display: none; padding: 16px 20px; border-radius: var(--radius-md); font-size: 0.95rem; font-weight: 600;"></div>
+
+        <!-- 3 Big Metric Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Total Allocated Budget</span>
+              <div class="stat-icon-wrapper icon-teal">🎯</div>
+            </div>
+            <div class="stat-value" id="dispTotalBudget">₹0.00</div>
+            <div class="stat-meta">Monthly ceiling configured for the household</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Actual Spent This Month</span>
+              <div class="stat-icon-wrapper icon-rose">💳</div>
+            </div>
+            <div class="stat-value" id="dispTotalSpent">₹0.00</div>
+            <div class="stat-meta" id="dispSpentMeta">Calculated dynamically from expense entries</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Remaining Balance</span>
+              <div class="stat-icon-wrapper icon-emerald">💰</div>
+            </div>
+            <div class="stat-value" id="dispRemainingBalance">₹0.00</div>
+            <div class="stat-meta" id="dispRemainingMeta">Funds remaining before exceeding allocation</div>
+          </div>
+        </div>
+
+        <!-- Progress Overview Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Overall Budget Consumption</h3>
+            <span id="dispPercentText" style="font-size: 1.15rem; font-weight: 800; color: var(--teal-light);">0%</span>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="width: 100%; height: 18px; background: var(--bg-surface); border-radius: 9999px; overflow: hidden;">
+              <div id="dispProgressBar" style="height: 100%; width: 0%; background: var(--teal-light); border-radius: 9999px; transition: width 0.6s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
+              <span>0% (Safe)</span>
+              <span>80% (Warning Threshold)</span>
+              <span>100% (Ceiling Exceeded)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Budgets Breakdown Grid -->
+        <div class="card">
+          <div class="card-header" style="justify-content: space-between;">
+            <h3 class="card-title">Category-Wise Budget Performance</h3>
+            <button class="btn btn-secondary btn-sm" onclick="openBudgetConfigModal()">Adjust Allocations</button>
+          </div>
+          <div class="card-body">
+            <div id="categoryBudgetsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+              <div style="text-align: center; color: var(--text-muted); padding: 30px;">Loading category budgets...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configure Budget Modal -->
+  <div id="budgetConfigModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Configure Monthly Budget</h3>
+        <button class="modal-close" onclick="closeModal('budgetConfigModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveBudget(event)">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Budget Month *</label>
+              <input type="month" id="cfgMonth" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Total Household Budget (₹ INR) *</label>
+              <input type="number" id="cfgTotal" class="form-control" placeholder="15000" min="1" step="100" required>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">Category Allocations (Optional)</label>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">Amounts in ₹ INR</span>
+            </div>
+
+            <div id="cfgCategoryRows" style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 6px;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('budgetConfigModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Household Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let activeMonth = new Date().toISOString().substring(0, 7);
+    let currentBudgetData = null;
+
+    const DEFAULT_CATEGORIES = [
+      'Electricity', 'Groceries', 'Water', 'Internet', 'Plumbing',
+      'Air conditioning', 'Gas', 'Cleaning', 'Electrical repairs', 'Property maintenance'
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('budgets');
+      renderHeader('Monthly Budget Management');
+      loadBudget();
+    });
+
+    window.onMonthChange = function(m) {
+      activeMonth = m;
+      loadBudget();
+    };
+
+    async function loadBudget() {
+      try {
+        const data = await API.getBudget(activeMonth);
+        currentBudgetData = data;
+
+        const total = Number(data.totalBudget || 0);
+        const spent = Number(data.totalSpent || 0);
+        const remaining = Number(data.remainingBalance || 0);
+        const pct = data.percentageUsed || 0;
+
+        document.getElementById('dispTotalBudget').innerText = formatINR(total);
+        document.getElementById('dispTotalSpent').innerText = formatINR(spent);
+        document.getElementById('dispRemainingBalance').innerText = formatINR(remaining);
+        document.getElementById('dispRemainingBalance').style.color = remaining < 0 ? 'var(--danger)' : 'var(--text-primary)';
+        document.getElementById('dispPercentText').innerText = `${pct}%`;
+
+        // Progress Bar
+        const bar = document.getElementById('dispProgressBar');
+        bar.style.width = Math.min(pct, 100) + '%';
+
+        // Banner Alert
+        const banner = document.getElementById('budgetBanner');
+        if (data.exceededAlert || pct >= 100) {
+          bar.style.background = 'var(--danger)';
+          banner.style.display = 'block';
+          banner.style.background = 'var(--danger-bg)';
+          banner.style.border = '1px solid var(--danger)';
+          banner.style.color = 'var(--danger)';
+          banner.innerHTML = `🚨 <strong>Budget Breach Alert!</strong> You have exceeded your ₹${total.toLocaleString('en-IN')} budget by ${formatINR(Math.abs(remaining))}. Immediate expense curb recommended.`;
+        } else if (data.warning80Percent || pct >= 80) {
+          bar.style.background = 'var(--warning)';
+          banner.style.display = 'block';
+          banner.style.background = 'var(--warning-bg)';
+          banner.style.border = '1px solid var(--warning)';
+          banner.style.color = '#d97706';
+          banner.innerHTML = `⚠️ <strong>80% Threshold Reached:</strong> You have spent ${pct}% (${formatINR(spent)}) of your monthly allocation. Only ${formatINR(remaining)} remaining.`;
+        } else {
+          bar.style.background = 'var(--teal-light)';
+          banner.style.display = 'none';
+        }
+
+        renderCategoryBudgets(data.categoryBudgets || []);
+      } catch (err) {
+        showToast('Failed to load budget: ' + err.message, 'error');
+      }
+    }
+
+    function renderCategoryBudgets(categories) {
+      const container = document.getElementById('categoryBudgetsContainer');
+      if (!categories || categories.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="empty-state">
+            <div class="empty-icon">🎯</div>
+            <h3>No category budgets set for ${activeMonth}</h3>
+            <p>Break down your household spending targets by specific category.</p>
+            <button class="btn btn-primary btn-sm" onclick="openBudgetConfigModal()">+ Set Category Budgets</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = categories.map(c => {
+        const pct = Math.min(c.percentageUsed, 100);
+        const isExceeded = c.percentageUsed >= 100;
+        const isWarn = c.percentageUsed >= 80 && !isExceeded;
+        const color = isExceeded ? 'var(--danger)' : (isWarn ? 'var(--warning)' : 'var(--teal-light)');
+
+        return `
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong style="font-size: 0.98rem; color: var(--text-primary);">${c.category}</strong>
+              <span style="font-weight: 700; color: ${color}; font-size: 0.88rem;">${c.percentageUsed}%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary);">
+              <span>Spent: <strong>${formatINR(c.spent)}</strong></span>
+              <span>Limit: ${formatINR(c.budgetLimit)}</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.06); border-radius: 9999px; overflow: hidden;">
+              <div style="height: 100%; width: ${pct}%; background: ${color}; border-radius: 9999px;"></div>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); text-align: right;">
+              ${c.remaining >= 0 ? `${formatINR(c.remaining)} remaining` : `Overspent by ${formatINR(Math.abs(c.remaining))}`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openBudgetConfigModal() {
+      document.getElementById('cfgMonth').value = activeMonth;
+      document.getElementById('cfgTotal').value = currentBudgetData ? currentBudgetData.totalBudget : 15000;
+
+      const rowsContainer = document.getElementById('cfgCategoryRows');
+      const existingMap = {};
+      if (currentBudgetData && currentBudgetData.categoryBudgets) {
+        currentBudgetData.categoryBudgets.forEach(cb => {
+          existingMap[cb.category] = cb.budgetLimit;
+        });
+      }
+
+      rowsContainer.innerHTML = DEFAULT_CATEGORIES.map(cat => {
+        const val = existingMap[cat] || '';
+        return `
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; align-items: center;">
+            <span style="font-size: 0.9rem; font-weight: 600;">${cat}</span>
+            <input type="number" class="form-control cat-budget-input" data-cat="${cat}" value="${val}" placeholder="Limit ₹" min="0" step="100">
+          </div>
+        `;
+      }).join('');
+
+      openModal('budgetConfigModal');
+    }
+
+    async function handleSaveBudget(e) {
+      e.preventDefault();
+      const monthYear = document.getElementById('cfgMonth').value;
+      const totalBudget = parseFloat(document.getElementById('cfgTotal').value);
+
+      if (!monthYear || isNaN(totalBudget) || totalBudget <= 0) {
+        showToast('Please specify a valid month and total budget', 'error');
+        return;
+      }
+
+      const inputs = document.querySelectorAll('.cat-budget-input');
+      const categoryBudgets = [];
+      inputs.forEach(inp => {
+        const val = parseFloat(inp.value);
+        if (!isNaN(val) && val > 0) {
+          categoryBudgets.push({
+            category: inp.getAttribute('data-cat'),
+            budgetLimit: val
+          });
+        }
+      });
+
+      try {
+        await API.saveBudget({ monthYear, totalBudget, categoryBudgets });
+        showToast('Household budget updated successfully!', 'success');
+        closeModal('budgetConfigModal');
+        activeMonth = monthYear;
+        loadBudget();
+      } catch (err) {
+        showToast('Failed to save budget: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

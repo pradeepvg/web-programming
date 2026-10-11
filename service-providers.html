@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Directory - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <!-- Header & Action -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Service Provider Directory</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">Direct directory of verified local plumbers, electricians, AC technicians and repair specialists</p>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="openProviderModal()">
+              <span>+ Add Service Specialist</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Directory Grid -->
+        <div id="providersGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 22px;">
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+            Loading technician directory...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Provider Modal -->
+  <div id="providerModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="spModalHeading" class="modal-title">Add Service Provider</h3>
+        <button class="modal-close" onclick="closeModal('providerModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveProvider(event)">
+        <input type="hidden" id="spId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Company / Agency Name *</label>
+            <input type="text" id="spCompany" class="form-control" placeholder="e.g. QuickFix Plumbing Solutions" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Contact Person / Technician</label>
+              <input type="text" id="spTech" class="form-control" placeholder="e.g. Ramesh Kumar">
+            </div>
+            <div class="form-group">
+              <label>Service Category *</label>
+              <select id="spCategory" class="form-control" required>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Air conditioning">Air conditioning</option>
+                <option value="Water purifier">Water purifier</option>
+                <option value="Pest control">Pest control</option>
+                <option value="Painting">Painting</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Carpentry">Carpentry</option>
+                <option value="Appliances">Appliances</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Contact Phone Number *</label>
+              <input type="tel" id="spPhone" class="form-control" placeholder="+91 98450 11223" required>
+            </div>
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email" id="spEmail" class="form-control" placeholder="service@agency.in">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Physical Address / Area</label>
+            <input type="text" id="spAddress" class="form-control" placeholder="e.g. Indiranagar, Bengaluru">
+          </div>
+          <div class="form-group">
+            <label>Service Specialties & Notes</label>
+            <textarea id="spNotes" class="form-control" rows="2" placeholder="e.g. Available on weekends for emergency pipe bursts and geyser leaks"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('providerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Provider</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let providers = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('service-providers');
+      renderHeader('Service Directory');
+      loadProviders();
+    });
+
+    async function loadProviders() {
+      try {
+        const data = await API.getServiceProviders();
+        providers = Array.isArray(data) ? data : [];
+        renderProvidersGrid();
+      } catch (err) {
+        showToast('Failed to load service providers: ' + err.message, 'error');
+      }
+    }
+
+    function renderProvidersGrid() {
+      const grid = document.getElementById('providersGrid');
+      if (providers.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1;" class="empty-state">
+            <div class="empty-icon">👷</div>
+            <h3>No service providers registered</h3>
+            <p>Save contact info for your local plumbers, electricians and AC maintenance agencies.</p>
+            <button class="btn btn-primary btn-sm" onclick="openProviderModal()">+ Add Service Provider</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = providers.map(p => {
+        const category = p.service_category || p.serviceCategory;
+        const phone = p.contact_number || p.contactNumber;
+        const company = p.company_name || p.companyName;
+        const tech = p.technician_name || p.technicianName;
+
+        return `
+          <div class="card" style="padding: 22px; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div>
+                  <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">${company}</h3>
+                  <div style="font-size: 0.82rem; color: var(--text-muted);">${tech ? `Technician: ${tech}` : 'Company Contractor'}</div>
+                </div>
+                <span class="badge" style="background: rgba(20, 184, 166, 0.12); color: var(--teal-light); font-weight: 700;">${category}</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem; color: var(--text-secondary); margin-top: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span>📞</span> <strong style="color: var(--text-primary);">${phone}</strong>
+                </div>
+                ${p.email ? `<div style="display: flex; align-items: center; gap: 8px;"><span>✉️</span> <span>${p.email}</span></div>` : ''}
+                ${p.address ? `<div style="display: flex; align-items: center; gap: 8px;"><span>📍</span> <span>${p.address}</span></div>` : ''}
+              </div>
+
+              ${(p.service_notes || p.serviceNotes) ? `
+                <div style="margin-top: 12px; padding: 10px; background: var(--bg-surface); border-radius: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+                  ${p.service_notes || p.serviceNotes}
+                </div>
+              ` : ''}
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 14px;">
+              <a href="tel:${phone}" class="btn btn-primary btn-sm" style="text-decoration: none;">
+                <span>📞 Call Directly</span>
+              </a>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-secondary btn-sm" onclick="editProvider(${p.id})">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteProvider(${p.id}, '${company.replace(/'/g, "\\'")}')">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openProviderModal(item = null) {
+      document.getElementById('spId').value = item ? item.id : '';
+      document.getElementById('spCompany').value = item ? (item.company_name || item.companyName) : '';
+      document.getElementById('spTech').value = item ? (item.technician_name || item.technicianName || '') : '';
+      document.getElementById('spCategory').value = item ? (item.service_category || item.serviceCategory) : 'Plumbing';
+      document.getElementById('spPhone').value = item ? (item.contact_number || item.contactNumber) : '';
+      document.getElementById('spEmail').value = item ? (item.email || '') : '';
+      document.getElementById('spAddress').value = item ? (item.address || '') : '';
+      document.getElementById('spNotes').value = item ? (item.service_notes || item.serviceNotes || '') : '';
+
+      document.getElementById('spModalHeading').innerText = item ? 'Edit Service Provider' : 'Add Service Specialist';
+      openModal('providerModal');
+    }
+
+    function editProvider(id) {
+      const item = providers.find(p => p.id === id);
+      if (item) openProviderModal(item);
+    }
+
+    function deleteProvider(id, name) {
+      confirmAction('Remove Provider', `Remove service provider "${name}" from directory?`, async () => {
+        try {
+          await API.deleteServiceProvider(id);
+          showToast('Provider removed from directory', 'success');
+          loadProviders();
+        } catch (err) {
+          showToast('Failed to delete provider: ' + err.message, 'error');
+        }
+      });
+    }
+
+    async function handleSaveProvider(e) {
+      e.preventDefault();
+      const id = document.getElementById('spId').value;
+      const companyName = document.getElementById('spCompany').value.trim();
+      const technicianName = document.getElementById('spTech').value.trim();
+      const serviceCategory = document.getElementById('spCategory').value;
+      const contactNumber = document.getElementById('spPhone').value.trim();
+      const email = document.getElementById('spEmail').value.trim();
+      const address = document.getElementById('spAddress').value.trim();
+      const serviceNotes = document.getElementById('spNotes').value.trim();
+
+      if (!companyName || !serviceCategory || !contactNumber) {
+        showToast('Please provide company name, category and contact number', 'error');
+        return;
+      }
+
+      const payload = { companyName, technicianName, serviceCategory, contactNumber, email, address, serviceNotes };
+
+      try {
+        if (id) {
+          await API.updateServiceProvider(id, payload);
+          showToast('Service provider details updated!', 'success');
+        } else {
+          await API.createServiceProvider(payload);
+          showToast('Service specialist added to directory!', 'success');
+        }
+        closeModal('providerModal');
+        loadProviders();
+      } catch (err) {
+        showToast('Error saving provider: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

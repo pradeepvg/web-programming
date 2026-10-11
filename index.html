@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Home Expense & Maintenance Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="background: radial-gradient(circle at 10% 20%, #0f172a 0%, #1e293b 90%); color: #ffffff; min-height: 100vh; display: flex; flex-direction: column;">
+
+  <!-- Hero Header -->
+  <header style="padding: 24px 48px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08);">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div class="brand-icon">🏡</div>
+      <div>
+        <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">SmartHome</div>
+        <div style="font-size: 0.75rem; color: var(--teal-light); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Expense & Maintenance</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <a href="login.html" class="btn btn-secondary" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15);">Sign In</a>
+      <a href="register.html" class="btn btn-primary">Create Account</a>
+    </div>
+  </header>
+
+  <!-- Hero Body -->
+  <main style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 24px; max-width: 900px; margin: 0 auto;">
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(20, 184, 166, 0.15); border: 1px solid rgba(20, 184, 166, 0.3); padding: 6px 16px; border-radius: 9999px; color: var(--teal-light); font-size: 0.85rem; font-weight: 600; margin-bottom: 24px;">
+      ✨ Complete Home Financial & Preventive Maintenance Management
+    </div>
+
+    <h1 style="font-size: 3.2rem; font-weight: 800; line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.03em;">
+      Track Household Expenses.<br>
+      <span style="background: linear-gradient(135deg, #2dd4bf, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Master Home Maintenance.</span>
+    </h1>
+
+    <p style="font-size: 1.15rem; color: #94a3b8; max-width: 650px; line-height: 1.6; margin-bottom: 36px;">
+      The unified household dashboard built for Indian homeowners. Monitor monthly electricity and grocery spending in ₹ INR, plan maintenance budgets, schedule recurring AC & RO servicing, and prevent overdue bills.
+    </p>
+
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-bottom: 50px;">
+      <a href="login.html" class="btn btn-primary" style="padding: 14px 32px; font-size: 1.05rem;">
+        Launch Dashboard Demo →
+      </a>
+      <a href="register.html" class="btn btn-secondary" style="padding: 14px 28px; font-size: 1.05rem; background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+        Register New Household
+      </a>
+    </div>
+
+    <!-- Quick Features Highlights -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; width: 100%; text-align: left;">
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 22px;">
+        <div style="font-size: 1.8rem; margin-bottom: 10px;">💳</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Expense Tracking</h3>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Log BESCOM electricity, gas, groceries, and repairs with Indian Rupee (₹) formatting.</p>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 22px;">
+        <div style="font-size: 1.8rem; margin-bottom: 10px;">🎯</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Smart Budget Alerts</h3>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Set monthly ₹15,000 budgets with automatic 80% warning and 100% breach notifications.</p>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 22px;">
+        <div style="font-size: 1.8rem; margin-bottom: 10px;">🔧</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Maintenance & Scheduler</h3>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Track recurring AC cleaning, water purifier filter servicing, and technician directory.</p>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 22px;">
+        <div style="font-size: 1.8rem; margin-bottom: 10px;">🧾</div>
+        <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">Household Bills</h3>
+        <p style="font-size: 0.85rem; color: #94a3b8;">Manage unpaid & paid bills with automated overdue alerts and duplicate payment protection.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer style="padding: 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem; color: #64748b;">
+    Smart Home Expense & Maintenance Tracker • Full-Stack Web Programming Project • CSE
+  </footer>
+
+  <script src="assets/js/api.js"></script>
+  <script>
+    // Redirect if already authenticated
+    if (API.getToken()) {
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>

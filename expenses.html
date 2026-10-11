@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expenses Management - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <!-- Header Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Household Expenses</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">Manage, categorize and track all household purchases in Indian Rupees (₹)</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="exportExpensesCsv()">
+              <span>📥 Export CSV</span>
+            </button>
+            <button class="btn btn-primary" onclick="openExpenseModal()">
+              <span>+ Record Expense</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="card" style="padding: 18px 24px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; align-items: flex-end;">
+            <div class="form-group">
+              <label>Search Keyword</label>
+              <input type="text" id="filterSearch" class="form-control" placeholder="Search title or vendor..." oninput="debounceFilter()">
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="filterCategory" class="form-control" onchange="loadExpenses()">
+                <option value="">All Categories</option>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water</option>
+                <option value="Gas">Gas</option>
+                <option value="Internet">Internet</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical repairs">Electrical repairs</option>
+                <option value="Painting">Painting</option>
+                <option value="Air conditioning">Air conditioning</option>
+                <option value="Water purifier">Water purifier</option>
+                <option value="Appliances">Appliances</option>
+                <option value="Property maintenance">Property maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Payment Method</label>
+              <select id="filterPayment" class="form-control" onchange="loadExpenses()">
+                <option value="">All Methods</option>
+                <option value="UPI">UPI</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Net Banking">Net Banking</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>From Date</label>
+              <input type="date" id="filterStartDate" class="form-control" onchange="loadExpenses()">
+            </div>
+            <div class="form-group">
+              <label>To Date</label>
+              <input type="date" id="filterEndDate" class="form-control" onchange="loadExpenses()">
+            </div>
+            <div>
+              <button class="btn btn-secondary" style="width: 100%;" onclick="resetFilters()">Reset Filters</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expenses Table Card -->
+        <div class="card">
+          <div class="card-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <h3 class="card-title">Expense Transactions</h3>
+              <span id="expenseCountBadge" class="badge" style="background: var(--bg-surface); color: var(--text-secondary); font-size: 0.8rem;">0 records</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span style="font-size: 0.85rem; color: var(--text-muted);">Sort By:</span>
+              <select id="sortField" class="form-control" style="width: 140px; padding: 6px 10px;" onchange="applySorting()">
+                <option value="date-desc">Date (Newest)</option>
+                <option value="date-asc">Date (Oldest)</option>
+                <option value="amount-desc">Amount (High to Low)</option>
+                <option value="amount-asc">Amount (Low to High)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Title & Description</th>
+                  <th>Category</th>
+                  <th>Payment Method</th>
+                  <th>Vendor</th>
+                  <th style="text-align: right;">Amount (₹ INR)</th>
+                  <th style="text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="expensesTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">Loading expenses...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Expense Modal -->
+  <div id="expenseModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalHeading" class="modal-title">Record New Expense</h3>
+        <button class="modal-close" onclick="closeModal('expenseModal')">✕</button>
+      </div>
+      <form id="expenseForm" onsubmit="handleSaveExpense(event)">
+        <input type="hidden" id="expId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Expense Title *</label>
+            <input type="text" id="expTitle" class="form-control" placeholder="e.g. BESCOM Electricity Bill" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="expCategory" class="form-control" required>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water</option>
+                <option value="Gas">Gas</option>
+                <option value="Internet">Internet</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical repairs">Electrical repairs</option>
+                <option value="Painting">Painting</option>
+                <option value="Air conditioning">Air conditioning</option>
+                <option value="Water purifier">Water purifier</option>
+                <option value="Appliances">Appliances</option>
+                <option value="Property maintenance">Property maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Amount (₹ INR) *</label>
+              <input type="number" id="expAmount" class="form-control" placeholder="1850.00" min="0.01" step="0.01" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date *</label>
+              <input type="date" id="expDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Payment Method *</label>
+              <select id="expPaymentMethod" class="form-control" required>
+                <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Net Banking">Net Banking</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Vendor / Service Provider</label>
+            <input type="text" id="expVendor" class="form-control" placeholder="e.g. BESCOM, Blinkit, QuickFix">
+          </div>
+          <div class="form-group">
+            <label>Description / Notes</label>
+            <textarea id="expDescription" class="form-control" rows="2" placeholder="Optional notes about this expense"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Optional Receipt File Name / Reference</label>
+            <input type="text" id="expReceipt" class="form-control" placeholder="e.g. bescom_oct_bill.pdf">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('expenseModal')">Cancel</button>
+          <button type="submit" id="saveExpenseBtn" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Expense Details Modal -->
+  <div id="viewExpenseModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Expense Details</h3>
+        <button class="modal-close" onclick="closeModal('viewExpenseModal')">✕</button>
+      </div>
+      <div class="modal-body" id="viewExpenseBody">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('viewExpenseModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let expensesList = [];
+    let debounceTimer;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('expenses');
+      renderHeader('Expenses Management');
+      loadExpenses();
+    });
+
+    window.openQuickAdd = () => openExpenseModal();
+
+    function debounceFilter() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(loadExpenses, 300);
+    }
+
+    function resetFilters() {
+      document.getElementById('filterSearch').value = '';
+      document.getElementById('filterCategory').value = '';
+      document.getElementById('filterPayment').value = '';
+      document.getElementById('filterStartDate').value = '';
+      document.getElementById('filterEndDate').value = '';
+      loadExpenses();
+    }
+
+    async function loadExpenses() {
+      const category = document.getElementById('filterCategory').value;
+      const paymentMethod = document.getElementById('filterPayment').value;
+      const startDate = document.getElementById('filterStartDate').value;
+      const endDate = document.getElementById('filterEndDate').value;
+      const search = document.getElementById('filterSearch').value.trim();
+
+      try {
+        const data = await API.getExpenses({ category, paymentMethod, startDate, endDate, search });
+        expensesList = Array.isArray(data) ? data : [];
+        applySorting();
+      } catch (err) {
+        showToast('Failed to load expenses: ' + err.message, 'error');
+      }
+    }
+
+    function applySorting() {
+      const sort = document.getElementById('sortField').value;
+      if (sort === 'date-desc') {
+        expensesList.sort((a, b) => new Date(b.expense_date || b.expenseDate) - new Date(a.expense_date || a.expenseDate));
+      } else if (sort === 'date-asc') {
+        expensesList.sort((a, b) => new Date(a.expense_date || a.expenseDate) - new Date(b.expense_date || b.expenseDate));
+      } else if (sort === 'amount-desc') {
+        expensesList.sort((a, b) => Number(b.amount) - Number(a.amount));
+      } else if (sort === 'amount-asc') {
+        expensesList.sort((a, b) => Number(a.amount) - Number(b.amount));
+      }
+      renderExpensesTable();
+    }
+
+    function renderExpensesTable() {
+      const tbody = document.getElementById('expensesTableBody');
+      const badge = document.getElementById('expenseCountBadge');
+      badge.innerText = `${expensesList.length} records`;
+
+      if (expensesList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon">💳</div>
+                <h3>No expenses found</h3>
+                <p>Try adjusting your search filters or record a new expense.</p>
+                <button class="btn btn-primary btn-sm" onclick="openExpenseModal()">+ Add New Expense</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = expensesList.map(e => `
+        <tr>
+          <td style="font-weight: 600; white-space: nowrap;">${formatDate(e.expense_date || e.expenseDate)}</td>
+          <td>
+            <div style="font-weight: 700; color: var(--text-primary); cursor: pointer;" onclick="viewExpense(${e.id})">${e.title}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">${e.description || 'No description provided'}</div>
+          </td>
+          <td>
+            <span class="badge" style="background: var(--bg-surface); color: var(--text-primary);">${e.category}</span>
+          </td>
+          <td>${e.payment_method || e.paymentMethod}</td>
+          <td>${e.vendor || '—'}</td>
+          <td style="text-align: right; font-weight: 800; font-size: 1.02rem; color: var(--text-primary);">
+            ${formatINR(e.amount)}
+          </td>
+          <td style="text-align: center; white-space: nowrap;">
+            <button class="btn btn-secondary btn-sm" title="View Details" onclick="viewExpense(${e.id})">👁️</button>
+            <button class="btn btn-secondary btn-sm" title="Edit Expense" onclick="editExpense(${e.id})">✏️</button>
+            <button class="btn btn-danger btn-sm" title="Delete Expense" onclick="deleteExpense(${e.id}, '${e.title.replace(/'/g, "\\'")}')">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openExpenseModal(item = null) {
+      document.getElementById('expId').value = item ? item.id : '';
+      document.getElementById('expTitle').value = item ? item.title : '';
+      document.getElementById('expCategory').value = item ? item.category : 'Electricity';
+      document.getElementById('expAmount').value = item ? item.amount : '';
+      document.getElementById('expDate').value = item ? (item.expense_date || item.expenseDate) : new Date().toISOString().substring(0, 10);
+      document.getElementById('expPaymentMethod').value = item ? (item.payment_method || item.paymentMethod) : 'UPI';
+      document.getElementById('expVendor').value = item ? (item.vendor || '') : '';
+      document.getElementById('expDescription').value = item ? (item.description || '') : '';
+      document.getElementById('expReceipt').value = item ? (item.receipt_filename || item.receiptFilename || '') : '';
+
+      document.getElementById('modalHeading').innerText = item ? 'Edit Household Expense' : 'Record New Expense';
+      openModal('expenseModal');
+    }
+
+    function editExpense(id) {
+      const item = expensesList.find(e => e.id === id);
+      if (item) openExpenseModal(item);
+    }
+
+    function viewExpense(id) {
+      const item = expensesList.find(e => e.id === id);
+      if (!item) return;
+
+      const body = document.getElementById('viewExpenseBody');
+      body.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div style="font-size:1.4rem; font-weight:800; color:var(--text-primary);">${item.title}</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--teal-light);">${formatINR(item.amount)}</div>
+          <hr style="border:0; border-top:1px solid var(--border-color);">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.92rem;">
+            <div><strong>Category:</strong> ${item.category}</div>
+            <div><strong>Date:</strong> ${formatDate(item.expense_date || item.expenseDate)}</div>
+            <div><strong>Payment Method:</strong> ${item.payment_method || item.paymentMethod}</div>
+            <div><strong>Vendor:</strong> ${item.vendor || '—'}</div>
+            <div><strong>Receipt File:</strong> ${item.receipt_filename || item.receiptFilename || 'None'}</div>
+            <div><strong>Expense ID:</strong> #${item.id}</div>
+          </div>
+          <div style="margin-top:6px;">
+            <strong>Description:</strong>
+            <p style="color:var(--text-secondary); margin-top:4px;">${item.description || 'No description entered.'}</p>
+          </div>
+        </div>
+      `;
+      openModal('viewExpenseModal');
+    }
+
+    function deleteExpense(id, title) {
+      confirmAction('Delete Expense', `Are you sure you want to delete "${title}"? This will update your monthly budget utilization.`, async () => {
+        try {
+          await API.deleteExpense(id);
+          showToast('Expense removed', 'success');
+          loadExpenses();
+        } catch (err) {
+          showToast('Failed to delete expense: ' + err.message, 'error');
+        }
+      });
+    }
+
+    async function handleSaveExpense(e) {
+      e.preventDefault();
+      const id = document.getElementById('expId').value;
+      const title = document.getElementById('expTitle').value.trim();
+      const category = document.getElementById('expCategory').value;
+      const amount = parseFloat(document.getElementById('expAmount').value);
+      const expenseDate = document.getElementById('expDate').value;
+      const paymentMethod = document.getElementById('expPaymentMethod').value;
+      const vendor = document.getElementById('expVendor').value.trim();
+      const description = document.getElementById('expDescription').value.trim();
+      const receiptFilename = document.getElementById('expReceipt').value.trim();
+
+      if (!title || !category || isNaN(amount) || amount <= 0) {
+        showToast('Please provide valid title, category and positive amount', 'error');
+        return;
+      }
+
+      const payload = { title, category, amount, expenseDate, paymentMethod, vendor, description, receiptFilename };
+
+      try {
+        if (id) {
+          await API.updateExpense(id, payload);
+          showToast('Expense updated successfully!', 'success');
+        } else {
+          await API.createExpense(payload);
+          showToast('New expense recorded!', 'success');
+        }
+        closeModal('expenseModal');
+        loadExpenses();
+      } catch (err) {
+        showToast('Error saving expense: ' + err.message, 'error');
+      }
+    }
+
+    async function exportExpensesCsv() {
+      try {
+        const blob = await API.request('/api/expenses/export/csv');
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `expenses_${new Date().toISOString().substring(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('CSV downloaded successfully!', 'success');
+      } catch (e) {
+        showToast('Failed to export CSV', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

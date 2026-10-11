@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile & Security - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <div>
+          <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Household Profile & Security</h2>
+          <p style="font-size: 0.88rem; color: var(--text-secondary);">Manage account credentials, home location details and currency settings</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+          <!-- Profile Information Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Homeowner Information</h3>
+            </div>
+            <div class="card-body">
+              <form onsubmit="handleUpdateProfile(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Full Name *</label>
+                  <input type="text" id="profName" class="form-control" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Email Address</label>
+                  <input type="email" id="profEmail" class="form-control" disabled style="opacity: 0.75; cursor: not-allowed;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Unique account identifier (cannot be modified)</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Phone Number</label>
+                  <input type="tel" id="profPhone" class="form-control" placeholder="+91 98765 43210">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Household Address</label>
+                  <textarea id="profAddress" class="form-control" rows="2" placeholder="Full residential address"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                  <label>Primary Accounting Currency</label>
+                  <input type="text" class="form-control" value="Indian Rupee (₹ INR)" disabled style="opacity: 0.85;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                  Save Profile Changes
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Security & Change Password Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Security & Credentials</h3>
+            </div>
+            <div class="card-body">
+              <form onsubmit="handleChangePassword(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>Current Password *</label>
+                  <input type="password" id="currentPassword" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                  <label>New Password (min 6 characters) *</label>
+                  <input type="password" id="newPassword" class="form-control" placeholder="••••••••" minlength="6" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                  <label>Confirm New Password *</label>
+                  <input type="password" id="confirmNewPassword" class="form-control" placeholder="••••••••" minlength="6" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                  Update Password
+                </button>
+              </form>
+
+              <hr style="border:0; border-top:1px solid var(--border-color); margin: 24px 0;">
+
+              <div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">Active Session</h4>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px;">
+                  Authenticated securely with JWT token encryption.
+                </p>
+                <button class="btn btn-danger" onclick="API.logout()" style="width: 100%;">
+                  Sign Out of SmartHome
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('profile');
+      renderHeader('Profile Settings');
+      loadProfileData();
+    });
+
+    async function loadProfileData() {
+      try {
+        const user = await API.getProfile();
+        document.getElementById('profName').value = user.name || '';
+        document.getElementById('profEmail').value = user.email || '';
+        document.getElementById('profPhone').value = user.phone || '';
+        document.getElementById('profAddress').value = user.address || '';
+      } catch (err) {
+        showToast('Failed to load profile: ' + err.message, 'error');
+      }
+    }
+
+    async function handleUpdateProfile(e) {
+      e.preventDefault();
+      const name = document.getElementById('profName').value.trim();
+      const phone = document.getElementById('profPhone').value.trim();
+      const address = document.getElementById('profAddress').value.trim();
+
+      if (!name) {
+        showToast('Name is required', 'error');
+        return;
+      }
+
+      try {
+        const updated = await API.updateProfile({ name, phone, address });
+        API.setUser({
+          id: updated.id,
+          name: updated.name,
+          email: updated.email,
+          currency: updated.currency || 'INR'
+        });
+        showToast('Profile updated successfully!', 'success');
+        renderSidebar('profile');
+      } catch (err) {
+        showToast('Failed to update profile: ' + err.message, 'error');
+      }
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const currentPassword = document.getElementById('currentPassword').value.trim();
+      const newPassword = document.getElementById('newPassword').value.trim();
+      const confirmNewPassword = document.getElementById('confirmNewPassword').value.trim();
+
+      if (newPassword !== confirmNewPassword) {
+        showToast('New passwords do not match!', 'error');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showToast('New password must be at least 6 characters', 'error');
+        return;
+      }
+
+      try {
+        await API.changePassword(currentPassword, newPassword);
+        showToast('Password changed successfully!', 'success');
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+      } catch (err) {
+        showToast(err.message || 'Failed to update password', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

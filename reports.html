@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports & Analytics - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <!-- Header & Action -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Household Analytics & Reports</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">Comprehensive financial audit, maintenance expenditures and bill settlement metrics in ₹ INR</p>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="exportAnalyticsCsv()">
+              <span>📥 Export Comprehensive Report CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Date Range Filter Toolbar -->
+        <div class="card" style="padding: 18px 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+              <div class="form-group">
+                <label>Date Range Start</label>
+                <input type="date" id="repStart" class="form-control" onchange="loadReportData()">
+              </div>
+              <div class="form-group">
+                <label>Date Range End</label>
+                <input type="date" id="repEnd" class="form-control" onchange="loadReportData()">
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="setQuickRange('this_month')">This Month</button>
+              <button class="btn btn-secondary btn-sm" onclick="setQuickRange('last_3_months')">Last 3 Months</button>
+              <button class="btn btn-secondary btn-sm" onclick="setQuickRange('this_year')">This Year</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Major Financial & Care Metrics -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Total Outlay in Range</span>
+              <div class="stat-icon-wrapper icon-teal">💳</div>
+            </div>
+            <div class="stat-value" id="repTotalExpenses">₹0.00</div>
+            <div class="stat-meta">Cumulative living expenses</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Total Maintenance Spend</span>
+              <div class="stat-icon-wrapper icon-purple">🛠️</div>
+            </div>
+            <div class="stat-value" id="repTotalMaintenance">₹0.00</div>
+            <div class="stat-meta">Actual equipment & structural repairs</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Settled Utility Bills</span>
+              <div class="stat-icon-wrapper icon-emerald">✅</div>
+            </div>
+            <div class="stat-value" id="repTotalPaidBills">₹0.00</div>
+            <div class="stat-meta">Cleared household bills</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Pending / Unpaid Bills</span>
+              <div class="stat-icon-wrapper icon-rose">⚠️</div>
+            </div>
+            <div class="stat-value" id="repTotalUnpaidBills" style="color: var(--danger);">₹0.00</div>
+            <div class="stat-meta">Outstanding utility obligations</div>
+          </div>
+        </div>
+
+        <!-- Analytics Visualizations Grid -->
+        <div class="charts-grid-equal">
+          <!-- Monthly Spending Trend -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Month-on-Month Expense Flow</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">INR (₹)</span>
+            </div>
+            <div class="card-body" style="height: 280px; position: relative;">
+              <canvas id="repMonthlyChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+
+          <!-- Category Distribution -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Category Spending Distribution</h3>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Selected Window</span>
+            </div>
+            <div class="card-body" style="height: 280px; position: relative;">
+              <canvas id="repCategoryChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid-equal">
+          <!-- Bill Settlement Status -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Paid vs Unpaid Bills Breakdown</h3>
+            </div>
+            <div class="card-body" style="height: 260px; position: relative;">
+              <canvas id="repBillsChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+
+          <!-- Maintenance Completion Status -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Maintenance Task Status Distribution</h3>
+            </div>
+            <div class="card-body" style="height: 260px; position: relative;">
+              <canvas id="repMaintChart" style="width: 100%; height: 100%;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Granular Expense Audit Table -->
+        <div class="card">
+          <div class="card-header" style="justify-content: space-between;">
+            <h3 class="card-title">Granular Expenses Audit Log</h3>
+            <span id="repTableCountBadge" class="badge" style="background: var(--bg-surface); color: var(--text-secondary);">0 entries</span>
+          </div>
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Payment Method</th>
+                  <th>Vendor</th>
+                  <th style="text-align: right;">Amount (₹ INR)</th>
+                </tr>
+              </thead>
+              <tbody id="repExpensesTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">Loading audit entries...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/chart-runner.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('reports');
+      renderHeader('Analytics & Reports');
+      setQuickRange('this_month');
+    });
+
+    function setQuickRange(type) {
+      const today = new Date();
+      const endStr = today.toISOString().substring(0, 10);
+      let startStr;
+
+      if (type === 'this_month') {
+        startStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+      } else if (type === 'last_3_months') {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 2);
+        d.setDate(1);
+        startStr = d.toISOString().substring(0, 10);
+      } else if (type === 'this_year') {
+        startStr = `${today.getFullYear()}-01-01`;
+      }
+
+      document.getElementById('repStart').value = startStr;
+      document.getElementById('repEnd').value = endStr;
+      loadReportData();
+    }
+
+    async function loadReportData() {
+      const startDate = document.getElementById('repStart').value;
+      const endDate = document.getElementById('repEnd').value;
+
+      try {
+        const rep = await API.getAnalytics(startDate, endDate);
+
+        // Update cards
+        document.getElementById('repTotalExpenses').innerText = formatINR(rep.totalExpense);
+        document.getElementById('repTotalMaintenance').innerText = formatINR(rep.totalMaintenanceCost);
+        document.getElementById('repTotalPaidBills').innerText = formatINR(rep.totalPaidBills);
+        document.getElementById('repTotalUnpaidBills').innerText = formatINR(rep.totalUnpaidBills);
+
+        // Render charts
+        MiniChart.renderBar('repMonthlyChart', rep.monthlyExpenses);
+        MiniChart.renderDoughnut('repCategoryChart', rep.categoryExpenses);
+
+        const billColors = ['#10b981', '#f59e0b', '#ef4444'];
+        MiniChart.renderDoughnut('repBillsChart', rep.billStatusBreakdown, billColors);
+
+        const maintColors = ['#10b981', '#f59e0b', '#3b82f6', '#ef4444'];
+        MiniChart.renderDoughnut('repMaintChart', rep.maintenanceBreakdown, maintColors);
+
+        // Render audit table
+        const tbody = document.getElementById('repExpensesTableBody');
+        const badge = document.getElementById('repTableCountBadge');
+        const list = rep.expenseList || [];
+        badge.innerText = `${list.length} entries`;
+
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No expenses recorded in selected date range.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(e => `
+          <tr>
+            <td>${formatDate(e.expense_date || e.expenseDate)}</td>
+            <td style="font-weight:700; color:var(--text-primary);">${e.title}</td>
+            <td><span class="badge" style="background:var(--bg-surface); color:var(--text-primary);">${e.category}</span></td>
+            <td>${e.payment_method || e.paymentMethod}</td>
+            <td>${e.vendor || '—'}</td>
+            <td style="text-align:right; font-weight:800; color:var(--text-primary);">${formatINR(e.amount)}</td>
+          </tr>
+        `).join('');
+
+      } catch (err) {
+        showToast('Failed to load report analytics: ' + err.message, 'error');
+      }
+    }
+
+    async function exportAnalyticsCsv() {
+      const startDate = document.getElementById('repStart').value;
+      const endDate = document.getElementById('repEnd').value;
+      try {
+        const blob = await API.request(`/api/reports/export/csv?startDate=${startDate}&endDate=${endDate}`);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `smarthome_report_${startDate}_to_${endDate}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Report CSV exported successfully!', 'success');
+      } catch (e) {
+        showToast('Failed to export CSV', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

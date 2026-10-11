@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Household Bills Management - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <!-- Header & Action -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Household Bills & Utilities</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">Track recurring electricity, water, gas, EMI and society maintenance dues with payment receipt logs</p>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="openBillModal()">
+              <span>+ Add Household Bill</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Pending Unpaid Dues</span>
+              <div class="stat-icon-wrapper icon-amber">⏳</div>
+            </div>
+            <div class="stat-value" id="cardUnpaidTotal" style="color: var(--warning);">₹0.00</div>
+            <div class="stat-meta" id="cardUnpaidCount">0 pending household bills</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Paid This Month</span>
+              <div class="stat-icon-wrapper icon-emerald">✅</div>
+            </div>
+            <div class="stat-value" id="cardPaidTotal">₹0.00</div>
+            <div class="stat-meta" id="cardPaidCount">0 settled utility statements</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-top">
+              <span class="stat-label">Critical Overdue Bills</span>
+              <div class="stat-icon-wrapper icon-rose">🚨</div>
+            </div>
+            <div class="stat-value" id="cardOverdueTotal" style="color: var(--danger);">₹0.00</div>
+            <div class="stat-meta" id="cardOverdueCount">0 past due date</div>
+          </div>
+        </div>
+
+        <!-- Filter Status Tabs -->
+        <div class="card" style="padding: 16px 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="billStatusFilterGroup">
+              <button class="btn btn-primary btn-sm bill-filter-btn" data-status="" onclick="setBillFilter(this, '')">All Bills</button>
+              <button class="btn btn-secondary btn-sm bill-filter-btn" data-status="UNPAID" onclick="setBillFilter(this, 'UNPAID')">Unpaid Only</button>
+              <button class="btn btn-secondary btn-sm bill-filter-btn" data-status="OVERDUE" onclick="setBillFilter(this, 'OVERDUE')">Overdue Only ⚠️</button>
+              <button class="btn btn-secondary btn-sm bill-filter-btn" data-status="PAID" onclick="setBillFilter(this, 'PAID')">Paid History ✅</button>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <select id="billCategoryFilter" class="form-control" style="width: 180px;" onchange="renderBillsTable()">
+                <option value="">All Categories</option>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water</option>
+                <option value="Gas">Gas</option>
+                <option value="Internet">Internet</option>
+                <option value="Rent">Rent</option>
+                <option value="Home loan">Home loan</option>
+                <option value="Maintenance charges">Maintenance charges</option>
+                <option value="Insurance">Insurance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bills List Table -->
+        <div class="card">
+          <div class="card-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h3 class="card-title">Bill Statements</h3>
+              <span id="billRecordCountBadge" class="badge" style="background: var(--bg-surface); color: var(--text-secondary);">0 records</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Bill Title & Category</th>
+                  <th>Billing Period</th>
+                  <th>Issue Date</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Amount (₹ INR)</th>
+                  <th style="text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="billsTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">Loading household bills...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Bill Modal -->
+  <div id="billModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="billModalHeading" class="modal-title">Add Household Bill</h3>
+        <button class="modal-close" onclick="closeModal('billModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveBill(event)">
+        <input type="hidden" id="billId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Bill Title *</label>
+            <input type="text" id="bTitle" class="form-control" placeholder="e.g. BESCOM Monthly Electricity" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Bill Category *</label>
+              <select id="bCategory" class="form-control" required>
+                <option value="Electricity">Electricity</option>
+                <option value="Water">Water</option>
+                <option value="Gas">Gas</option>
+                <option value="Internet">Internet</option>
+                <option value="Rent">Rent</option>
+                <option value="Home loan">Home loan</option>
+                <option value="Maintenance charges">Maintenance charges</option>
+                <option value="Insurance">Insurance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Amount (₹ INR) *</label>
+              <input type="number" id="bAmount" class="form-control" placeholder="1850" min="0.01" step="0.01" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Billing Period / Cycle *</label>
+            <input type="text" id="bPeriod" class="form-control" placeholder="e.g. Oct 2026 or Cycle 01-30" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Issue Date *</label>
+              <input type="date" id="bIssueDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Due Date *</label>
+              <input type="date" id="bDueDate" class="form-control" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('billModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Bill</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record Bill Payment Modal -->
+  <div id="paymentModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Bill Payment</h3>
+        <button class="modal-close" onclick="closeModal('paymentModal')">✕</button>
+      </div>
+      <form onsubmit="handleConfirmPayment(event)">
+        <input type="hidden" id="payBillId">
+        <div class="modal-body">
+          <div style="background: var(--bg-surface); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 6px;">
+            <div style="font-weight: 700; color: var(--text-primary); font-size: 1.05rem;" id="payBillTitle">BESCOM Electricity</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: var(--teal-light);" id="payBillAmount">₹1,850.00</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Payment Date *</label>
+              <input type="date" id="payDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Payment Method *</label>
+              <select id="payMethod" class="form-control" required>
+                <option value="UPI">UPI (GPay / PhonePe / Paytm)</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Net Banking">Net Banking</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Transaction / UTR Reference ID</label>
+            <input type="text" id="payRef" class="form-control" placeholder="e.g. UPI-9871234455 or TXN-442299">
+          </div>
+
+          <div class="form-group">
+            <label>Payment Notes</label>
+            <textarea id="payNotes" class="form-control" rows="2" placeholder="e.g. Auto-debited on ICICI credit card"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm & Mark as Paid</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let billsList = [];
+    let activeFilterStatus = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('bills');
+      renderHeader('Household Bills');
+      loadBills();
+    });
+
+    async function loadBills() {
+      try {
+        const data = await API.getBills();
+        billsList = Array.isArray(data) ? data : [];
+        updateBillMetrics();
+        renderBillsTable();
+      } catch (err) {
+        showToast('Failed to load bills: ' + err.message, 'error');
+      }
+    }
+
+    function updateBillMetrics() {
+      const today = new Date().toISOString().substring(0, 10);
+      const unpaid = billsList.filter(b => b.status === 'UNPAID');
+      const paid = billsList.filter(b => b.status === 'PAID');
+      const overdue = billsList.filter(b => b.status === 'OVERDUE' || (b.status !== 'PAID' && (b.due_date || b.dueDate) < today));
+
+      const unpaidSum = unpaid.reduce((acc, b) => acc + Number(b.amount || 0), 0);
+      const paidSum = paid.reduce((acc, b) => acc + Number(b.amount || 0), 0);
+      const overdueSum = overdue.reduce((acc, b) => acc + Number(b.amount || 0), 0);
+
+      document.getElementById('cardUnpaidTotal').innerText = formatINR(unpaidSum);
+      document.getElementById('cardUnpaidCount').innerText = `${unpaid.length} pending statements`;
+
+      document.getElementById('cardPaidTotal').innerText = formatINR(paidSum);
+      document.getElementById('cardPaidCount').innerText = `${paid.length} settled bills`;
+
+      document.getElementById('cardOverdueTotal').innerText = formatINR(overdueSum);
+      document.getElementById('cardOverdueCount').innerText = `${overdue.length} overdue bills`;
+    }
+
+    function setBillFilter(btn, status) {
+      document.querySelectorAll('.bill-filter-btn').forEach(b => {
+        b.className = 'btn btn-secondary btn-sm bill-filter-btn';
+      });
+      btn.className = 'btn btn-primary btn-sm bill-filter-btn';
+      activeFilterStatus = status;
+      renderBillsTable();
+    }
+
+    function renderBillsTable() {
+      const cat = document.getElementById('billCategoryFilter').value;
+      const today = new Date().toISOString().substring(0, 10);
+
+      let filtered = billsList;
+      if (activeFilterStatus) {
+        if (activeFilterStatus === 'OVERDUE') {
+          filtered = filtered.filter(b => b.status === 'OVERDUE' || (b.status !== 'PAID' && (b.due_date || b.dueDate) < today));
+        } else {
+          filtered = filtered.filter(b => b.status === activeFilterStatus);
+        }
+      }
+      if (cat) {
+        filtered = filtered.filter(b => b.category === cat);
+      }
+
+      const tbody = document.getElementById('billsTableBody');
+      document.getElementById('billRecordCountBadge').innerText = `${filtered.length} records`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon">🧾</div>
+                <h3>No bill statements found</h3>
+                <p>Add your monthly electricity, gas, internet or society maintenance bills.</p>
+                <button class="btn btn-primary btn-sm" onclick="openBillModal()">+ Add New Bill</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(b => {
+        const isPaid = b.status === 'PAID';
+        const isOverdue = b.status === 'OVERDUE' || (!isPaid && (b.due_date || b.dueDate) < today);
+        const statusBadge = isPaid ? 'badge-paid' : (isOverdue ? 'badge-overdue' : 'badge-unpaid');
+        const displayStatus = isPaid ? 'PAID' : (isOverdue ? 'OVERDUE' : 'UNPAID');
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--text-primary);">${b.title}</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${b.category}</div>
+            </td>
+            <td>${b.billing_period || b.billingPeriod}</td>
+            <td>${formatDate(b.issue_date || b.issueDate)}</td>
+            <td style="font-weight: 600; color: ${isOverdue ? 'var(--danger)' : 'var(--text-primary)'};">
+              ${formatDate(b.due_date || b.dueDate)}
+              ${isOverdue ? '<span style="font-size:0.75rem; color:var(--danger); display:block;">⚠️ Overdue</span>' : ''}
+            </td>
+            <td>
+              <span class="badge ${statusBadge}">${displayStatus}</span>
+              ${isPaid && b.payment_date ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Paid: ${formatDate(b.payment_date || b.paymentDate)}</div>` : ''}
+            </td>
+            <td style="text-align: right; font-weight: 800; font-size: 1.05rem; color: var(--text-primary);">
+              ${formatINR(b.amount)}
+            </td>
+            <td style="text-align: center; white-space: nowrap;">
+              ${!isPaid ? `<button class="btn btn-primary btn-sm" onclick="openPaymentModal(${b.id})">💳 Pay Bill</button>` : `<span style="font-size:0.8rem; color:var(--success); font-weight:700;">Settled</span>`}
+              <button class="btn btn-secondary btn-sm" onclick="editBill(${b.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteBill(${b.id}, '${b.title.replace(/'/g, "\\'")}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openBillModal(item = null) {
+      document.getElementById('billId').value = item ? item.id : '';
+      document.getElementById('bTitle').value = item ? item.title : '';
+      document.getElementById('bCategory').value = item ? item.category : 'Electricity';
+      document.getElementById('bAmount').value = item ? item.amount : '';
+      document.getElementById('bPeriod').value = item ? (item.billing_period || item.billingPeriod) : '';
+      document.getElementById('bIssueDate').value = item ? (item.issue_date || item.issueDate) : new Date().toISOString().substring(0, 10);
+      document.getElementById('bDueDate').value = item ? (item.due_date || item.dueDate) : '';
+
+      document.getElementById('billModalHeading').innerText = item ? 'Edit Household Bill' : 'Add Household Bill';
+      openModal('billModal');
+    }
+
+    function editBill(id) {
+      const item = billsList.find(b => b.id === id);
+      if (item) openBillModal(item);
+    }
+
+    function openPaymentModal(id) {
+      const item = billsList.find(b => b.id === id);
+      if (!item) return;
+
+      document.getElementById('payBillId').value = item.id;
+      document.getElementById('payBillTitle').innerText = item.title;
+      document.getElementById('payBillAmount').innerText = formatINR(item.amount);
+      document.getElementById('payDate').value = new Date().toISOString().substring(0, 10);
+      document.getElementById('payRef').value = '';
+      document.getElementById('payNotes').value = '';
+
+      openModal('paymentModal');
+    }
+
+    async function handleConfirmPayment(e) {
+      e.preventDefault();
+      const billId = document.getElementById('payBillId').value;
+      const paymentDate = document.getElementById('payDate').value;
+      const paymentMethod = document.getElementById('payMethod').value;
+      const referenceNumber = document.getElementById('payRef').value.trim();
+      const notes = document.getElementById('payNotes').value.trim();
+
+      try {
+        await API.payBill(billId, { paymentDate, paymentMethod, referenceNumber, notes });
+        showToast('Payment recorded successfully! Bill marked as PAID.', 'success');
+        closeModal('paymentModal');
+        loadBills();
+      } catch (err) {
+        showToast('Payment failed: ' + err.message, 'error');
+      }
+    }
+
+    function deleteBill(id, title) {
+      confirmAction('Delete Bill', `Are you sure you want to delete bill "${title}"?`, async () => {
+        try {
+          await API.deleteBill(id);
+          showToast('Bill removed', 'success');
+          loadBills();
+        } catch (err) {
+          showToast('Failed to delete bill: ' + err.message, 'error');
+        }
+      });
+    }
+
+    async function handleSaveBill(e) {
+      e.preventDefault();
+      const id = document.getElementById('billId').value;
+      const title = document.getElementById('bTitle').value.trim();
+      const category = document.getElementById('bCategory').value;
+      const amount = parseFloat(document.getElementById('bAmount').value);
+      const billingPeriod = document.getElementById('bPeriod').value.trim();
+      const issueDate = document.getElementById('bIssueDate').value;
+      const dueDate = document.getElementById('bDueDate').value;
+
+      if (!title || !category || isNaN(amount) || amount <= 0 || !billingPeriod) {
+        showToast('Please provide valid title, category, positive amount and billing period', 'error');
+        return;
+      }
+
+      const payload = { title, category, amount, billingPeriod, issueDate, dueDate };
+
+      try {
+        if (id) {
+          await API.updateBill(id, payload);
+          showToast('Bill statement updated!', 'success');
+        } else {
+          await API.createBill(payload);
+          showToast('New household bill recorded!', 'success');
+        }
+        closeModal('billModal');
+        loadBills();
+      } catch (err) {
+        showToast('Error saving bill: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

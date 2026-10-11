@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Maintenance Tasks - Smart Home Tracker</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside id="appSidebar" class="app-sidebar"></aside>
+
+    <div class="main-content">
+      <header id="topHeader" class="top-header"></header>
+
+      <div class="page-body">
+        <!-- Header & Action -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Home Maintenance Tasks</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary);">Manage preventive home servicing, equipment repairs, priority levels and technician logs in ₹ INR</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="window.location.href='calendar.html'">
+              <span>📅 Calendar Schedule</span>
+            </button>
+            <button class="btn btn-primary" onclick="openTaskModal()">
+              <span>+ Log Maintenance Task</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Tabs & Status Pills -->
+        <div class="card" style="padding: 16px 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="statusFilterGroup">
+              <button class="btn btn-primary btn-sm status-filter-btn" data-status="" onclick="setStatusFilter(this, '')">All Tasks</button>
+              <button class="btn btn-secondary btn-sm status-filter-btn" data-status="PENDING" onclick="setStatusFilter(this, 'PENDING')">Pending</button>
+              <button class="btn btn-secondary btn-sm status-filter-btn" data-status="IN_PROGRESS" onclick="setStatusFilter(this, 'IN_PROGRESS')">In Progress</button>
+              <button class="btn btn-secondary btn-sm status-filter-btn" data-status="OVERDUE" onclick="setStatusFilter(this, 'OVERDUE')">Overdue ⚠️</button>
+              <button class="btn btn-secondary btn-sm status-filter-btn" data-status="COMPLETED" onclick="setStatusFilter(this, 'COMPLETED')">Completed ✅</button>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <input type="text" id="taskSearchInput" class="form-control" style="width: 220px;" placeholder="Search task title..." oninput="renderFilteredTasks()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tasks Table Card -->
+        <div class="card">
+          <div class="card-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h3 class="card-title">Maintenance Records</h3>
+              <span id="taskCountBadge" class="badge" style="background: var(--bg-surface); color: var(--text-secondary);">0 tasks</span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Task Title & Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                  <th>Assigned Technician</th>
+                  <th style="text-align: right;">Cost (Est / Actual)</th>
+                  <th style="text-align: center;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tasksTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">Loading maintenance tasks...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / Edit Maintenance Task Modal -->
+  <div id="taskModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 id="taskModalHeading" class="modal-title">Create Maintenance Task</h3>
+        <button class="modal-close" onclick="closeModal('taskModal')">✕</button>
+      </div>
+      <form onsubmit="handleSaveTask(event)">
+        <input type="hidden" id="taskId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Task Title *</label>
+            <input type="text" id="tTitle" class="form-control" placeholder="e.g. Master Bedroom Split AC Servicing" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Maintenance Category *</label>
+              <select id="tCategory" class="form-control" required>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Air conditioning">Air conditioning</option>
+                <option value="Water purifier">Water purifier</option>
+                <option value="Washing machine">Washing machine</option>
+                <option value="Refrigerator">Refrigerator</option>
+                <option value="Pest control">Pest control</option>
+                <option value="Painting">Painting</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Roof and structural repairs">Roof and structural repairs</option>
+                <option value="General inspection">General inspection</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Priority Level *</label>
+              <select id="tPriority" class="form-control" required>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM" selected>Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Status *</label>
+              <select id="tStatus" class="form-control" required onchange="toggleCompletionDate(this.value)">
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="OVERDUE">Overdue</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Service Provider / Technician</label>
+              <select id="tServiceProvider" class="form-control">
+                <option value="">None / Self</option>
+                <!-- populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Scheduled Date</label>
+              <input type="date" id="tScheduledDate" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>Due Date / Deadline *</label>
+              <input type="date" id="tDueDate" class="form-control" required>
+            </div>
+          </div>
+
+          <div id="completionRow" class="form-group" style="display: none;">
+            <label>Completion Date</label>
+            <input type="date" id="tCompletionDate" class="form-control">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Estimated Cost (₹ INR)</label>
+              <input type="number" id="tEstimatedCost" class="form-control" placeholder="1200" min="0" step="50">
+            </div>
+            <div class="form-group">
+              <label>Actual Incurred Cost (₹ INR)</label>
+              <input type="number" id="tActualCost" class="form-control" placeholder="0" min="0" step="50">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Service Instructions & Notes</label>
+            <textarea id="tNotes" class="form-control" rows="2" placeholder="e.g. Clean dust filters, check capacitor voltage, replenish refrigerant gas"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Maintenance Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Task Modal -->
+  <div id="viewTaskModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Maintenance Record Details</h3>
+        <button class="modal-close" onclick="closeModal('viewTaskModal')">✕</button>
+      </div>
+      <div class="modal-body" id="viewTaskBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('viewTaskModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    let tasksList = [];
+    let currentStatusFilter = '';
+    let providersList = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderSidebar('maintenance');
+      renderHeader('Home Maintenance Management');
+      loadServiceProviders();
+      loadTasks();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new') {
+        openTaskModal();
+      }
+    });
+
+    async function loadServiceProviders() {
+      try {
+        providersList = await API.getServiceProviders();
+        const sel = document.getElementById('tServiceProvider');
+        sel.innerHTML = '<option value="">None / Self-repair</option>' +
+          providersList.map(p => `<option value="${p.id}">${p.company_name || p.companyName} (${p.service_category || p.serviceCategory})</option>`).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadTasks() {
+      try {
+        const data = await API.getMaintenanceTasks();
+        tasksList = Array.isArray(data) ? data : [];
+        renderFilteredTasks();
+      } catch (err) {
+        showToast('Failed to load maintenance tasks: ' + err.message, 'error');
+      }
+    }
+
+    function setStatusFilter(btn, status) {
+      document.querySelectorAll('.status-filter-btn').forEach(b => {
+        b.className = 'btn btn-secondary btn-sm status-filter-btn';
+      });
+      btn.className = 'btn btn-primary btn-sm status-filter-btn';
+      currentStatusFilter = status;
+      renderFilteredTasks();
+    }
+
+    function renderFilteredTasks() {
+      const search = (document.getElementById('taskSearchInput').value || '').toLowerCase();
+      let filtered = tasksList;
+
+      if (currentStatusFilter) {
+        filtered = filtered.filter(t => t.status === currentStatusFilter);
+      }
+      if (search) {
+        filtered = filtered.filter(t => t.title.toLowerCase().includes(search) || (t.category && t.category.toLowerCase().includes(search)));
+      }
+
+      const tbody = document.getElementById('tasksTableBody');
+      document.getElementById('taskCountBadge').innerText = `${filtered.length} tasks`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon">🔧</div>
+                <h3>No maintenance tasks found</h3>
+                <p>Create a task to track upcoming air conditioning, plumbing or appliance checks.</p>
+                <button class="btn btn-primary btn-sm" onclick="openTaskModal()">+ Log Maintenance Task</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(t => {
+        const isOverdue = t.isOverdue || t.status === 'OVERDUE';
+        const statusBadgeClass = `badge-${t.status.toLowerCase()}`;
+        const prioBadgeClass = `badge-${t.priority.toLowerCase()}`;
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--text-primary); cursor: pointer;" onclick="viewTaskDetails(${t.id})">
+                ${t.title}
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${t.category}</div>
+            </td>
+            <td>
+              <span class="badge ${prioBadgeClass}">${t.priority}</span>
+            </td>
+            <td>
+              <span class="badge ${statusBadgeClass}">${t.status}</span>
+            </td>
+            <td style="font-weight: 600; color: ${isOverdue ? 'var(--danger)' : 'var(--text-primary)'}; white-space: nowrap;">
+              ${formatDate(t.due_date || t.dueDate)}
+              ${isOverdue ? '<span style="font-size:0.75rem; display:block; color:var(--danger);">⚠️ Overdue</span>' : ''}
+            </td>
+            <td>
+              ${t.service_provider_name ? `<span style="font-weight:600;">${t.service_provider_name}</span>` : '—'}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <div style="font-size: 0.82rem; color: var(--text-muted);">Est: ${formatINR(t.estimated_cost || t.estimatedCost || 0)}</div>
+              <div style="font-weight: 700; color: var(--text-primary);">Act: ${formatINR(t.actual_cost || t.actualCost || 0)}</div>
+            </td>
+            <td style="text-align: center; white-space: nowrap;">
+              <button class="btn btn-secondary btn-sm" title="View Details" onclick="viewTaskDetails(${t.id})">👁️</button>
+              <button class="btn btn-secondary btn-sm" title="Edit Task" onclick="editTask(${t.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" title="Delete Task" onclick="deleteTask(${t.id}, '${t.title.replace(/'/g, "\\'")}')">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function toggleCompletionDate(status) {
+      const row = document.getElementById('completionRow');
+      if (status === 'COMPLETED') {
+        row.style.display = 'block';
+        if (!document.getElementById('tCompletionDate').value) {
+          document.getElementById('tCompletionDate').value = new Date().toISOString().substring(0, 10);
+        }
+      } else {
+        row.style.display = 'none';
+      }
+    }
+
+    function openTaskModal(item = null) {
+      document.getElementById('taskId').value = item ? item.id : '';
+      document.getElementById('tTitle').value = item ? item.title : '';
+      document.getElementById('tCategory').value = item ? item.category : 'Plumbing';
+      document.getElementById('tPriority').value = item ? item.priority : 'MEDIUM';
+      document.getElementById('tStatus').value = item ? item.status : 'PENDING';
+      document.getElementById('tScheduledDate').value = item ? (item.scheduled_date || item.scheduledDate || '') : '';
+      document.getElementById('tDueDate').value = item ? (item.due_date || item.dueDate || '') : new Date().toISOString().substring(0, 10);
+      document.getElementById('tCompletionDate').value = item ? (item.completion_date || item.completionDate || '') : '';
+      document.getElementById('tEstimatedCost').value = item ? (item.estimated_cost || item.estimatedCost || 0) : '';
+      document.getElementById('tActualCost').value = item ? (item.actual_cost || item.actualCost || 0) : '';
+      document.getElementById('tNotes').value = item ? (item.notes || '') : '';
+      document.getElementById('tServiceProvider').value = item ? (item.service_provider_id || item.serviceProviderId || '') : '';
+
+      toggleCompletionDate(document.getElementById('tStatus').value);
+      document.getElementById('taskModalHeading').innerText = item ? 'Edit Maintenance Task' : 'Log Maintenance Task';
+      openModal('taskModal');
+    }
+
+    function editTask(id) {
+      const item = tasksList.find(t => t.id === id);
+      if (item) openTaskModal(item);
+    }
+
+    function viewTaskDetails(id) {
+      const item = tasksList.find(t => t.id === id);
+      if (!item) return;
+
+      const body = document.getElementById('viewTaskBody');
+      body.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-size:1.35rem; font-weight:800; color:var(--text-primary);">${item.title}</div>
+              <div style="font-size:0.85rem; color:var(--text-muted);">${item.category} • Task #${item.id}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <span class="badge badge-${item.priority.toLowerCase()}">${item.priority}</span>
+              <span class="badge badge-${item.status.toLowerCase()}">${item.status}</span>
+            </div>
+          </div>
+          <hr style="border:0; border-top:1px solid var(--border-color);">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.92rem;">
+            <div><strong>Due Date:</strong> ${formatDate(item.due_date || item.dueDate)}</div>
+            <div><strong>Scheduled Date:</strong> ${formatDate(item.scheduled_date || item.scheduledDate)}</div>
+            <div><strong>Completion Date:</strong> ${formatDate(item.completion_date || item.completionDate)}</div>
+            <div><strong>Estimated Cost:</strong> ${formatINR(item.estimated_cost || item.estimatedCost || 0)}</div>
+            <div><strong>Actual Cost:</strong> <strong style="color:var(--success); font-size:1.05rem;">${formatINR(item.actual_cost || item.actualCost || 0)}</strong></div>
+            <div><strong>Technician:</strong> ${item.service_provider_name || 'None'} ${item.service_provider_contact ? `(${item.service_provider_contact})` : ''}</div>
+          </div>
+          <div style="margin-top:6px;">
+            <strong>Service Instructions & Notes:</strong>
+            <p style="color:var(--text-secondary); margin-top:4px; font-size:0.92rem;">${item.notes || 'No notes provided.'}</p>
+          </div>
+        </div>
+      `;
+      openModal('viewTaskModal');
+    }
+
+    function deleteTask(id, title) {
+      confirmAction('Delete Maintenance Task', `Are you sure you want to delete task "${title}"?`, async () => {
+        try {
+          await API.deleteMaintenanceTask(id);
+          showToast('Task removed', 'success');
+          loadTasks();
+        } catch (err) {
+          showToast('Failed to delete task: ' + err.message, 'error');
+        }
+      });
+    }
+
+    async function handleSaveTask(e) {
+      e.preventDefault();
+      const id = document.getElementById('taskId').value;
+      const title = document.getElementById('tTitle').value.trim();
+      const category = document.getElementById('tCategory').value;
+      const priority = document.getElementById('tPriority').value;
+      const status = document.getElementById('tStatus').value;
+      const scheduledDate = document.getElementById('tScheduledDate').value || null;
+      const dueDate = document.getElementById('tDueDate').value;
+      const completionDate = document.getElementById('tCompletionDate').value || null;
+      const estimatedCost = parseFloat(document.getElementById('tEstimatedCost').value || 0);
+      const actualCost = parseFloat(document.getElementById('tActualCost').value || 0);
+      const serviceProviderId = document.getElementById('tServiceProvider').value ? parseInt(document.getElementById('tServiceProvider').value) : null;
+      const notes = document.getElementById('tNotes').value.trim();
+
+      if (!title || !category || !dueDate) {
+        showToast('Please provide title, category and due date', 'error');
+        return;
+      }
+
+      const payload = {
+        title, category, priority, status, scheduledDate, dueDate, completionDate,
+        estimatedCost, actualCost, serviceProviderId, notes
+      };
+
+      try {
+        if (id) {
+          await API.updateMaintenanceTask(id, payload);
+          showToast('Maintenance task updated!', 'success');
+        } else {
+          await API.createMaintenanceTask(payload);
+          showToast('New maintenance task logged!', 'success');
+        }
+        closeModal('taskModal');
+        loadTasks();
+      } catch (err) {
+        showToast('Failed to save task: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
